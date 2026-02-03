@@ -100,6 +100,5 @@ AutoQA/
 
 └── .env                    # API Keys and Model configuration
 
-🌟 Note on Recent Improvements
-We recently upgraded the Context Harvester to move beyond simple accessibility trees. It now performs a deep DOM scan, which makes it significantly more effective at detecting elements in modern web apps (like your Personal Finance App) where standard accessibility roles might be missing or generic.
+
 
