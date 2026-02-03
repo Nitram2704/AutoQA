@@ -37,15 +37,19 @@ RULES:
 5. Prioritize resilient selectors.
 6. If an iframe is detected in context, use frameLocator().
 
-${previousError ? `🚨 PREVIOUS ATTEMPT FAILED:\nError: "${previousError}"\nFix the test to resolve this error.` : ''}
-
 Return the response in JSON format matching this schema:
 {
   "testName": "string",
+  "thought": "Brief explanation of your approach. If fixing a previous error, explain WHY it failed and HOW you fixed it.",
   "imports": "string",
   "testCode": "string",
   "fullScript": "string"
 }
+
+${previousError ? `🚨 PREVIOUS ATTEMPT FAILED:
+Error: "${previousError}"
+IMPORTANT: Most failures are due to incorrect locators. Check the context for correct roles, labels, or data-testids.
+Analyze the error above and provide a fix.` : ''}
 `;
 
     const result = await model.generateContent([

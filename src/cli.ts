@@ -37,6 +37,10 @@ program
                     const testContent = await generatePlaywrightTest(prompt, context, previousError);
                     spinner.succeed(chalk.green('Test generated successfully!'));
 
+                    if (testContent.thought) {
+                        console.log(chalk.cyan(`\n🧠 AI Thought: ${testContent.thought}\n`));
+                    }
+
                     if (options.dryRun) {
                         console.log(chalk.yellow('\n🧪 DRY-RUN MODE: Generated Script:\n'));
                         console.log(chalk.gray('─'.repeat(50)));
@@ -45,7 +49,7 @@ program
                         return;
                     }
 
-                    spinner.start(chalk.blue('🚀 Running test...'));
+                    spinner.start(chalk.blue(currentRetry > 0 ? '🔄 Attempting to self-heal...' : '🚀 Running test...'));
                     const result = await runPlaywrightTest(testContent.fullScript, {
                         headless: options.headless,
                         url: context.baseUrl
@@ -57,7 +61,7 @@ program
                         return;
                     } else {
                         spinner.fail(chalk.red('Test failed.'));
-                        console.error(chalk.red(result.error));
+                        console.error(chalk.yellow(`\n❌ Error Detail:\n${result.error}\n`));
                         previousError = result.error;
                         currentRetry++;
 

@@ -46,10 +46,13 @@ export async function runPlaywrightTest(
         // Playwright captures screenshots automatically if configured, 
         // but here we might need to handle it or rely on the test code itself.
 
+        const errorLines = error.message.split('\n');
+        const summary = errorLines.find((l: string) => l.includes('Error:')) || errorLines[0];
+
         return {
             success: false,
             output: error.stdout || '',
-            error: error.stderr || error.message,
+            error: `${summary}\n${error.stderr || ''}`.substring(0, 1000), // Cap payload for LLM
             screenshotPath: screenshotPath
         };
     }

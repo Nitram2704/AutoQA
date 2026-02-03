@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const PlaywrightTestSchema = z.object({
   testName: z.string().describe('Descriptive name of the test'),
+  thought: z.string().describe('Agent reasoning for the approach or fix'),
   imports: z.string().describe('Required imports for the test file'),
   testCode: z.string().describe('The actual test code including assertions'),
   fullScript: z.string().describe('The complete runnable .spec.ts content')
@@ -26,6 +27,7 @@ export function validateGeneratedTest(aiOutput: string): PlaywrightTestContent {
       const code = matches[0][1].trim();
       return {
         testName: 'Generated Test',
+        thought: 'Refining test logic from markdown code block.',
         imports: "import { test, expect } from '@playwright/test';",
         testCode: code,
         fullScript: code.includes('import') ? code : `import { test, expect } from '@playwright/test';\n\n${code}`
