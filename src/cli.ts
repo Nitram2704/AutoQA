@@ -27,7 +27,8 @@ program
         try {
             spinner.text = chalk.blue('🔍 Scanning app context...');
             const context = await loadContext(options.url);
-            spinner.succeed(chalk.green(`Found ${context.accessibilityTree.length} interactive elements at ${context.baseUrl}`));
+            const totalElements = context.elements.reduce((acc, el) => acc + (el.children?.length || 0) + 1, 0);
+            spinner.succeed(chalk.green(`Found context at ${context.baseUrl} (${totalElements} potential interactive points)`));
 
             while (currentRetry < maxRetries) {
                 spinner.start(chalk.blue(currentRetry > 0 ? `🔄 Retrying (Attempt ${currentRetry + 1}/${maxRetries})...` : '🤖 Generating test plan...'));
@@ -36,7 +37,7 @@ program
                     const testContent = await generatePlaywrightTest(prompt, context, previousError);
                     spinner.succeed(chalk.green('Test generated successfully!'));
 
-                    if (options.dry_run) {
+                    if (options.dryRun) {
                         console.log(chalk.yellow('\n🧪 DRY-RUN MODE: Generated Script:\n'));
                         console.log(chalk.gray('─'.repeat(50)));
                         console.log(testContent.fullScript);

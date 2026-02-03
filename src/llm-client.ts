@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite-preview-02-05';
+const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite';
 
 if (!API_KEY) {
     throw new Error('GEMINI_API_KEY is missing from .env');
@@ -24,15 +24,18 @@ export async function generatePlaywrightTest(
 You are an expert QA Automation Engineer. Generate a Playwright TypeScript test.
 CONTEXT:
 - Base URL: ${context.baseUrl}
-- Accessibility Tree: ${JSON.stringify(context.accessibilityTree || {}, null, 2)}
+- Interactive Elements (Accessibility Tree & DOM Hints): ${JSON.stringify(context.elements || {}, null, 2)}
 - Examples: ${context.exampleTests || 'None provided.'}
 
 RULES:
 1. Output ONLY valid TypeScript code.
 2. Use getByRole, getByLabel, getByText (accessibility-first).
-3. Include assertions with expect().
-4. Prioritize resilient selectors.
-5. If an iframe is detected in context, use frameLocator().
+3. If accessibility roles are generic (e.g., 'generic', 'none') or missing, use other Playwright locators:
+   - page.locator('selector') using ID or data-testid if available in context.
+   - page.getByPlaceholder().
+4. Include assertions with expect().
+5. Prioritize resilient selectors.
+6. If an iframe is detected in context, use frameLocator().
 
 ${previousError ? `🚨 PREVIOUS ATTEMPT FAILED:\nError: "${previousError}"\nFix the test to resolve this error.` : ''}
 

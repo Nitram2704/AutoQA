@@ -29,8 +29,8 @@ export async function runPlaywrightTest(
     fs.writeFileSync(historyFile, testCode);
 
     try {
-        const headlessFlag = options.headless ? '--headless' : '';
-        const output = execSync(`npx playwright test ${tempFile} --headed=false`, {
+        const headlessFlag = options.headless ? '' : '--headed'; // Use --headed only if NOT headless
+        const output = execSync(`npx playwright test ${tempFile} ${headlessFlag}`, {
             encoding: 'utf8',
             env: { ...process.env, BASE_URL: options.url }
         });

@@ -10,15 +10,18 @@ export const PlaywrightTestSchema = z.object({
 export type PlaywrightTestContent = z.infer<typeof PlaywrightTestSchema>;
 
 export function validateGeneratedTest(aiOutput: string): PlaywrightTestContent {
+  // Try to find JSON block first
+  const jsonMatch = aiOutput.match(/\{[\s\S]*\}/);
+  const jsonString = jsonMatch ? jsonMatch[0] : aiOutput;
+
   try {
-    // Attempt to parse as JSON first
-    const parsed = JSON.parse(aiOutput);
+    const parsed = JSON.parse(jsonString);
     return PlaywrightTestSchema.parse(parsed);
   } catch (e) {
-    // If not JSON, try to extract from markdown code blocks
+    // If not valid JSON, try to extract from markdown code blocks
     const codeBlockRegex = /```(?:typescript|javascript|ts|js)?\s*([\s\S]*?)```/g;
     const matches = Array.from(aiOutput.matchAll(codeBlockRegex));
-    
+
     if (matches.length > 0) {
       const code = matches[0][1].trim();
       return {
@@ -28,7 +31,7 @@ export function validateGeneratedTest(aiOutput: string): PlaywrightTestContent {
         fullScript: code.includes('import') ? code : `import { test, expect } from '@playwright/test';\n\n${code}`
       };
     }
-    
-    throw new Error('Could not parse AI output as valid test code.');
+
+    throw new Error(`Could not parse AI output as valid test code. Raw output: ${aiOutput.substring(0, 100)}...`);
   }
 }
