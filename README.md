@@ -74,17 +74,29 @@ Cleans AI output by stripping markdown blocks or irrelevant text.
 📁 4. Project File Structure
 text
 AutoQA/
+
 ├── src/                    # TypeScript Source Code
+
 │   ├── cli.ts              # CLI Entry point
+
 │   ├── context-harvester.ts # Web element extraction logic
+
 │   ├── llm-client.ts       # Gemini AI integration
+
 │   ├── runner.ts           # Playwright execution engine
+
 │   └── validator.ts        # AI output validation
+
 ├── auto-qa/                # Generated artifacts
+
 │   ├── history/            # History of generated .spec.ts files
+
 │   └── evidence/           # Failure screenshots (if applicable)
+
 ├── package.json            # Dependencies and scripts
+
 ├── tsconfig.json           # TS Compilation settings
+
 └── .env                    # API Keys and Model configuration
 
 🌟 Note on Recent Improvements
