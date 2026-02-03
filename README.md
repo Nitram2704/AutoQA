@@ -9,6 +9,7 @@ Hybrid Detection (Recent Improvement): Combines accessibility roles with DOM hin
 Automatic Execution (Runner): Once the Playwright code is generated, it is saved locally and executed in a real browser instance.
 Self-Healing: If a test fails, the error log is sent back to Gemini. The AI then attempts to fix the script and re-run it automatically (supporting up to 3 retries).
 Dry-Run Mode: Allows users to preview the generated code without launching a browser.
+
 🛠️ 2. Technical Stack
 Runtime: Node.js 22+ (TypeScript).
 AI Engine: Gemini 2.0 Flash Lite (via @google/generative-ai).
