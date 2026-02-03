@@ -1,4 +1,5 @@
 🤖 Project: AutoQA (AI-Powered E2E Testing)
+
 AutoQA is a personal productivity tool (CLI) designed to automate the creation and execution of End-to-End (E2E) tests using Artificial Intelligence (Gemini 2.0) and Playwright. Its goal is to allow developers to describe test flows in natural language and see them executed instantly without writing a single line of test code manually.
 
 🚀 1. Key Functionalities
