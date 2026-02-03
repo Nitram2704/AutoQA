@@ -19,6 +19,7 @@ Validation: Zod (to ensure AI responses match the required JSON schema).
 Manages the connection to the Gemini API.
 Prompt Engineering: Features a robust System Prompt that instructs the AI to prioritize accessibility-first locators (getByRole) but allows for robust alternatives if the context is ambiguous.
 
+## Installation
 1. Clone the repository.
 2. Install dependencies:
    ```bash
@@ -101,4 +102,4 @@ AutoQA/
 
 🌟 Note on Recent Improvements
 We recently upgraded the Context Harvester to move beyond simple accessibility trees. It now performs a deep DOM scan, which makes it significantly more effective at detecting elements in modern web apps (like your Personal Finance App) where standard accessibility roles might be missing or generic.
-## Installation
+
