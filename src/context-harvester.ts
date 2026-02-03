@@ -42,8 +42,17 @@ export async function extractAccessibilityTree(url: string, headless = true): Pr
     const page = await context.newPage();
 
     try {
-        await page.goto(url, { waitUntil: 'networkidle' });
-        const snapshot = await (page as any).accessibility?.snapshot();
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        // Wait a bit for slow sites like example.com
+        await page.waitForTimeout(1000);
+
+        let snapshot = null;
+        try {
+            snapshot = await (page as any).accessibility?.snapshot();
+        } catch (e) {
+            console.warn('⚠️ Playwright accessibility snapshot failed, falling back to empty tree.');
+        }
+
         if (!snapshot) return [];
 
         // Recursive cleaner to filter and map tree
