@@ -1,0 +1,75 @@
+﻿Documento de Requisitos del Producto (PRD): Auto-QA
+Estado: Listo para Desarrollo
+Rol: Senior Product Manager & Software Architect
+Tecnología Principal: Gemini AI + Playwright
+________________
+
+
+1. Resumen Ejecutivo
+* Visión del Producto: Una herramienta de productividad personal (CLI) que elimina la necesidad de escribir manualmente scripts de prueba. Permite que el desarrollador describa flujos en lenguaje natural y los ejecute instantáneamente.
+* Público Objetivo: Desarrolladores que trabajan en proyectos personales (Side projects) y necesitan QA rápido sin complejidad.
+* Propuesta de Valor Única: Generación de código basada en el Accessibility Tree del sitio mediante Gemini, garantizando tests resilientes y legibles.
+2. Alcance del Proyecto (Scope)
+* In-Scope (MVP):
+   * Interfaz de línea de comandos (CLI) para ejecutar instrucciones.
+   * Integración con el SDK de Google Generative AI (Gemini).
+   * Generación automática de archivos .spec.ts compatibles con Playwright.
+   * Ejecución local en modo headless o con navegador visible.
+* Out-of-Scope:
+   * Dashboard en la nube (todo es local).
+   * Soporte para múltiples navegadores (solo Chromium por ahora).
+   * Integración con bases de datos externas de reportes.
+3. Requisitos Funcionales (User Stories)
+ID
+	Historia de Usuario
+	Criterios de Aceptación (Gherkin)
+	US.1
+	Generar test desde texto
+	Dado una frase como "Verifica el checkout", Cuando ejecuto el CLI, Entonces Gemini devuelve código TS válido.
+	US.2
+	Ejecución de prueba
+	Dado un script generado, Cuando el Runner lo invoca, Entonces Playwright realiza las acciones en el navegador.
+	US.3
+	Reporte de fallos
+	Dado un test que falla, Cuando termina la ejecución, Entonces se guarda un screenshot en ./auto-qa/evidence/.
+	4. Especificaciones Técnicas
+Tech Stack
+* Runtime: Node.js (TypeScript).
+* LLM: Gemini 1.5 Flash (vía @google/generative-ai).
+* Automation: Playwright.
+* CLI Engine: commander o yargs.
+Modelo de Datos (Output de Gemini)
+Para evitar alucinaciones, la IA siempre responderá en este formato JSON estricto:
+JSON
+{
+  "test_name": "string",
+  "steps": [
+    {
+      "action": "click | type | navigate | assert",
+      "code_snippet": "page.getByRole(...)"
+    }
+  ],
+  "full_script": "import { test, expect } from '@playwright/test'; ..."
+}
+
+
+Arquitectura de Integración
+1. Input: El usuario envía una instrucción.
+2. Context Injection: El CLI captura la URL base y, si es posible, un "snapshot" del texto del sitio.
+3. Prompting: Se envía a Gemini con instrucciones de "System" para usar selectores de accesibilidad.
+4. Execution: Se guarda el archivo temporalmente y se ejecuta con npx playwright test.
+5. Requisitos No Funcionales
+* Velocidad: El script debe estar generado en menos de 5 segundos usando el modelo Flash.
+* Simplicidad: Cero configuración inicial más allá de la API_KEY.
+* Seguridad: Las credenciales deben leerse de un archivo .env local, nunca enviarse como texto plano al modelo.
+6. UX/UI y Flujo del Usuario
+1. Instalación: npm install -D auto-qa-tool.
+2. Ejecución: npx auto-qa "Inicia sesión con mi usuario de prueba".
+3. Feedback: La terminal muestra:
+   * [Generating...] Analizando con Gemini...
+   * [Running...] Abriendo navegador...
+   * [Success] Test completado en 12s.
+7. Casos Borde (Edge Cases)
+* Selectores Ambiguos: Si hay dos botones "Comprar", Gemini debe ser instruido para usar nth(0) o diferenciar por contenedor.
+* Errores de Red: Si la API de Google falla, el sistema debe permitir re-intentar la generación sin cerrar la terminal.
+* Flujos con Iframe: Gemini debe detectar la necesidad de usar frameLocator.

@@ -1,0 +1,286 @@
+AutoQA CLI Tool - Implementation Plan
+Goal
+Build a CLI tool that generates and executes Playwright E2E tests from natural language prompts using Gemini AI. The tool will be installable via npx, automatically detect project URLs from 
+package.json
+, and provide an autonomous test generation loop with self-healing capabilities.
+
+Reference Architecture: Based on the Mambo fitness app's 
+ai-test-runner.ts
+ implementation, adapted for web testing with Playwright instead of mobile testing with Maestro.
+
+User Review Required
+IMPORTANT
+
+Architecture Decision: Following the Mambo QA pattern with these key adaptations:
+
+Context Harvester: Extract accessibility tree from web pages (Playwright) instead of mobile testIDs
+LLM Client: Use Gemini 2.0 Flash Lite with accessibility-first selector prompts
+Runner: Execute Playwright tests instead of Maestro YAML
+Self-Healing Loop: Retry failed tests with error feedback (max 3 attempts)
+WARNING
+
+Breaking Changes:
+
+Requires Node.js 22+ with ESM support
+Requires GEMINI_API_KEY in 
+.env
+ file
+Generated tests are temporary by default (user prompted to save)
+Proposed Changes
+Core Architecture Components
+[NEW] 
+package.json
+NPM package configuration with:
+
+Name: auto-qa (for global npx usage)
+Type: module (ESM support)
+Bin: ./dist/cli.js (CLI entry point)
+Dependencies:
+@google/generative-ai (Gemini SDK)
+@playwright/test (automation)
+commander (CLI framework)
+ora (spinners)
+zod (validation)
+dotenv (env management)
+glob (file scanning)
+CLI Entry Point
+[NEW] 
+src/cli.ts
+Main CLI orchestrator following Mambo's 
+ai-test-runner.ts
+ pattern:
+
+Parse arguments: npx auto-qa "<prompt>" [--dry-run] [--url] [--headless]
+Validate GEMINI_API_KEY from 
+.env
+Load app context (accessibility tree + example tests)
+Run autonomous loop (generate → validate → execute → retry on failure)
+Handle dry-run mode (generate only, skip execution)
+Prompt user to save successful tests to ./auto-qa/tests/
+Key Features:
+
+Ora spinners for visual feedback
+Max 3 retry attempts with error context
+Exit codes: 0 (success), 1 (failure)
+Context Harvesting
+[NEW] 
+src/context-harvester.ts
+Extract web page context for AI (adapted from Mambo's 
+context_loader.ts
+):
+
+Functions:
+
+detectProjectUrl(): Parse 
+package.json
+ scripts to find dev server URL
+
+Look for dev, start, serve scripts
+Extract port from --port, -p, or default to localhost:3000
+Return base URL or prompt user if not found
+extractAccessibilityTree(url: string): Use Playwright to:
+
+Navigate to URL
+Extract all interactive elements (buttons, links, inputs, selects)
+Capture ARIA roles, labels, and text content
+Return structured snapshot (JSON)
+loadExampleTests(): Read existing tests from ./auto-qa/tests/
+
+Use first 2-3 tests as few-shot examples
+Return concatenated test content
+loadContext()
+: Orchestrate all context loading
+
+Return { baseUrl, accessibilityTree, exampleTests }
+Caching: Optional .context_cache.json for performance (future enhancement)
+
+AI Integration
+[NEW] 
+src/llm-client.ts
+Gemini 2.0 Flash Lite integration (adapted from Mambo's 
+llm_client.ts
+):
+
+Function: generatePlaywrightTest(prompt, context, previousError?)
+
+System Prompt Strategy:
+
+You are an expert QA Automation Engineer for web applications.
+Your goal is to write a Playwright TypeScript test based on the user's request.
+CONTEXT:
+- Base URL: {context.baseUrl}
+- Available elements: {context.accessibilityTree}
+- Use accessibility-first selectors: getByRole, getByLabel, getByText
+RULES:
+1. Output ONLY valid TypeScript code for a .spec.ts file
+2. Use Playwright's auto-waiting features
+3. Prioritize getByRole over CSS selectors
+4. Include assertions with expect()
+5. Handle iframes with frameLocator() when needed
+EXAMPLES:
+{context.exampleTests}
+Self-Healing: If previousError exists, append:
+
+🚨 PREVIOUS EXECUTION FAILED:
+Error: "{previousError}"
+Fix the test to resolve this specific error.
+Output Validation: Use Zod schema to ensure valid TypeScript structure
+
+Validation Layer
+[NEW] 
+src/validator.ts
+Zod schemas for AI output validation:
+
+const PlaywrightTestSchema = z.object({
+  testName: z.string(),
+  imports: z.string(),
+  testCode: z.string(),
+  fullScript: z.string()
+});
+Function: validateGeneratedTest(aiOutput: string)
+
+Parse AI response as JSON or extract code blocks
+Validate against schema
+Return validated test or throw error for re-prompt
+Test Execution
+[NEW] 
+src/runner.ts
+Execute generated Playwright tests (adapted from Mambo's 
+runner.ts
+):
+
+Function: runPlaywrightTest(testCode: string, options: { headless: boolean })
+
+Steps:
+
+Write test to temp file: os.tmpdir()/auto-qa-test-{timestamp}.spec.ts
+Execute: npx playwright test {tempFile} ${headless ? '--headed' : ''}
+Capture stdout/stderr
+On failure: Save screenshot to ./auto-qa/evidence/failure-{timestamp}.png
+Return { success: boolean, output: string, error?: string }
+Cleanup: Keep temp file for debugging, clean up on next run
+
+TypeScript Configuration
+[NEW] 
+tsconfig.json
+ESM-compatible TypeScript config:
+
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  }
+}
+Environment Setup
+[NEW] 
+.env.example
+GEMINI_API_KEY=your_api_key_here
+[NEW] 
+.gitignore
+node_modules/
+dist/
+.env
+auto-qa/evidence/
+*.log
+Directory Structure
+auto-qa/
+├── src/
+│   ├── cli.ts                 # Main entry point
+│   ├── context-harvester.ts   # Extract page context
+│   ├── llm-client.ts          # Gemini integration
+│   ├── validator.ts           # Zod schemas
+│   └── runner.ts              # Playwright executor
+├── tests/                     # Example tests (optional)
+├── evidence/                  # Failure screenshots
+├── package.json
+├── tsconfig.json
+├── .env.example
+└── README.md
+Verification Plan
+Automated Tests
+1. Unit Tests (Jest)
+Command: npm test
+
+Test Files:
+
+__tests__/context-harvester.test.ts: Mock package.json parsing, URL detection
+__tests__/validator.test.ts: Test Zod schema validation with valid/invalid inputs
+__tests__/llm-client.test.ts: Mock Gemini API responses
+2. Integration Test (Dry-Run Mode)
+Command: npm run build && node dist/cli.js "Click the login button" --dry-run
+
+Expected Output:
+
+🔑 API Key found (ends with XXXX)
+🎯 Goal: "Click the login button"
+🧪 DRY-RUN MODE: Will generate code but skip execution
+🔍 Scanning app context...
+✅ Found 15 interactive elements
+🤖 Generating test plan...
+📝 Generated Test:
+──────────────────────────────────────────────────
+import { test, expect } from '@playwright/test';
+test('Click the login button', async ({ page }) => {
+  await page.goto('http://localhost:3000');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await expect(page).toHaveURL(/.*login/);
+});
+──────────────────────────────────────────────────
+✅ DRY-RUN: Test generated successfully. Skipping execution.
+3. End-to-End Test (Real Execution)
+Command: npm run build && node dist/cli.js "Verify homepage loads" --url http://example.com
+
+Prerequisites:
+
+Playwright installed: npx playwright install chromium
+Valid GEMINI_API_KEY in 
+.env
+Expected Behavior:
+
+Generate test for homepage verification
+Execute test in headless browser
+Display success/failure with spinner feedback
+Prompt: "Save this test to ./auto-qa/tests/? (y/n)"
+Manual Verification
+Test Case 1: Invalid API Key
+Steps:
+
+Remove GEMINI_API_KEY from 
+.env
+Run: node dist/cli.js "test"
+Expected: Error message "❌ Error: GEMINI_API_KEY is missing from .env"
+Test Case 2: Self-Healing Loop
+Steps:
+
+Create a page with ambiguous selectors (two "Submit" buttons)
+Run: node dist/cli.js "Click the submit button"
+Expected:
+Attempt 1 fails (ambiguous selector)
+Attempt 2 uses nth(0) or container differentiation
+Success or max retries message
+Test Case 3: Screenshot on Failure
+Steps:
+
+Run: node dist/cli.js "Click non-existent button"
+Expected:
+Test fails
+Screenshot saved to ./auto-qa/evidence/failure-{timestamp}.png
+Error message displays failure reason
+Implementation Order
+Setup (Phase 1): Initialize project, install dependencies, configure TypeScript
+Context Harvester (Phase 2): Implement URL detection and accessibility tree extraction
+LLM Client (Phase 3): Integrate Gemini with system prompts
+Validator (Phase 4): Create Zod schemas for output validation
+Runner (Phase 5): Implement Playwright test execution
+CLI (Phase 6): Orchestrate all components with autonomous loop
+Testing (Phase 7): Write unit tests and run integration tests
+Documentation (Phase 8): README, examples, and distribution setup
+
+Comment
+Ctrl+Alt+M

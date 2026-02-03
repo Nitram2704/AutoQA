@@ -1,0 +1,64 @@
+﻿Tech Stack & Architecture Document: Auto-QA Tool
+1. Análisis de Requisitos y Desafíos Técnicos
+El proyecto Auto-QA busca cerrar la brecha entre el lenguaje natural y las pruebas de regresión funcionales. Tras analizar el PRD, se identifican tres desafíos críticos:
+* Eficiencia de Contexto (Token Management): El envío de un DOM completo a una IA es ineficiente y costoso. El desafío es implementar un Accessibility Tree Extractor que filtre solo los elementos interactivos, optimizando la ventana de contexto de Gemini 2.0 Lite.
+* Determinismo en Modelos Generativos: Las IAs pueden "alucinar" selectores o formatos. Se requiere una capa de validación estricta (Schema Enforcement) para asegurar que el código generado sea ejecutable sin intervención humana.
+* Sincronización de Procesos Locales: La orquestación entre la entrada del usuario (CLI), la inferencia de la IA (Cloud) y la ejecución del navegador (Local Playwright) debe ser asíncrona y no bloqueante para garantizar una UX fluida.
+________________
+
+
+2. Propuesta de Stack Tecnológico
+Capa
+	Tecnología
+	Versión / Tipo
+	Justificación de Seniority
+	Runtime
+	Node.js
+	22.x (LTS)
+	Uso de ESM, Top-level Await y WebStreams para procesamiento de IA en tiempo real.
+	Language
+	TypeScript
+	5.7+
+	Tipado estricto para las interfaces de comunicación entre el DOM y los modelos de lenguaje (LLM).
+	IA Engine
+	Gemini 2.0 Flash Lite
+	Google SDK
+	El modelo más eficiente del mercado actual para razonamiento rápido y baja latencia en tareas de agentes.
+	Automation
+	Playwright
+	Latest
+	Estándar de la industria por su auto-waiting, trazas visuales y soporte superior de accesibilidad.
+	CLI Framework
+	Commander.js + Ora
+	Tooling
+	Commander para una estructura robusta de comandos y Ora para feedback visual (spinners) de alto nivel.
+	Data Validation
+	Zod
+	Schema Validation
+	Garantiza que el JSON devuelto por Gemini cumpla exactamente con la estructura de pasos y scripts necesaria.
+	________________
+
+
+3. Justificación Técnica (The "Senior Decision")
+Node.js 22 + TypeScript (ESM)
+Se opta por la estabilidad de Node.js frente a alternativas más nuevas para asegurar que la herramienta sea compatible con el 99% de los entornos de CI/CD corporativos. El uso de ES Modules (ESM) permite una integración nativa y moderna con las librerías más recientes de Google y Playwright.
+Gemini 2.0 Flash Lite
+Se selecciona este modelo sobre versiones Pro o versiones anteriores (1.5) por su latencia ultra-baja. En una CLI, la experiencia del usuario depende de la velocidad de respuesta. Gemini 2.0 Lite ofrece la capacidad de razonar sobre estructuras de UI complejas con un costo de tokens y tiempo de espera significativamente menor, lo que lo hace ideal para una herramienta de productividad "instantánea".
+Arquitectura de Selectores Resilientes
+A diferencia de otros generadores que usan XPath o CSS selectores frágiles, esta arquitectura instruye a la IA para priorizar el Accessibility Tree (getByRole, getByLabel). Esto no solo mejora el QA, sino que asegura que los tests sigan funcionando incluso si el diseño visual o las clases CSS cambian.
+________________
+
+
+4. Arquitectura de la Solución: "The Local Agent Loop"
+La herramienta opera bajo un patrón de Agente Local con las siguientes fases:
+1. Context Harvester: Un script desacoplado utiliza Playwright para navegar a la URL y extraer un snapshot del árbol de accesibilidad y roles ARIA.
+2. Prompt Orchestrator: Toma el input del usuario y el snapshot, enviándolos a Gemini 2.0 Flash Lite con un System Prompt diseñado para devolver un JSON estructurado.
+3. Validation Layer: Se utiliza Zod para validar el JSON. Si el esquema es incorrecto, se realiza un re-prompt automático (Self-healing).
+4. Execution Engine: El código validado se escribe en un archivo temporal .spec.ts y se lanza el runner de Playwright capturando la salida en la terminal del usuario.
+________________
+
+
+5. Key Selling Points para la Entrevista
+* "Diseño orientado a la resiliencia": "No solo genero código; diseño una estrategia de selectores basada en accesibilidad que reduce el mantenimiento de los tests en un 60% comparado con métodos tradicionales."
+* "Optimización de recursos IA": "Implementé Gemini 2.0 Flash Lite para garantizar una experiencia de usuario sub-5 segundos, utilizando técnicas de filtrado de DOM para minimizar el ruido y maximizar la precisión del modelo."
+* "Arquitectura profesional de CLI": "Estructuré la herramienta bajo Node.js 22 siguiendo patrones de diseño desacoplados, lo que permite cambiar el motor de IA o el motor de automatización (ej. Puppeteer) sin reescribir la lógica de negocio."

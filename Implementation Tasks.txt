@@ -1,0 +1,57 @@
+AutoQA CLI Tool - Implementation Tasks
+Phase 1: Project Setup & Architecture
+Initialize Node.js project with TypeScript 5.7+ and ESM configuration
+Install core dependencies (Playwright, @google/generative-ai, Commander.js, Ora, Zod)
+Configure tsconfig.json for ESM, top-level await, and strict typing
+Set up project structure (src/, tests/, evidence/, temp/)
+Create .env.example with GEMINI_API_KEY placeholder
+Phase 2: Core Architecture Components
+ Context Harvester: Extract accessibility tree from target URL
+ Implement Playwright-based DOM snapshot extractor
+ Filter interactive elements (buttons, inputs, links, etc.)
+ Generate ARIA role mapping for AI context
+ Prompt Orchestrator: Manage Gemini AI communication
+ Design system prompt for accessibility-first selectors
+ Implement JSON schema enforcement in prompt
+ Handle context injection (URL + accessibility snapshot)
+ Validation Layer: Zod schema validation
+ Define TypeScript interfaces for AI response
+ Create Zod schemas for test structure validation
+ Implement self-healing re-prompt on schema errors
+Phase 3: Test Generation Engine
+ Implement Gemini 2.0 Flash Lite integration
+ Create test template generator (.spec.ts format)
+ Handle action types: click, type, navigate, assert
+ Generate resilient selectors (getByRole, getByLabel priority)
+ Implement edge case handling (nth selectors, frameLocator)
+Phase 4: CLI Interface
+ Build Commander.js command structure
+ Implement main command: npx auto-qa "<instruction>"
+ Add Ora spinners for feedback stages:
+ [Generating...] Analyzing with Gemini
+ [Running...] Opening browser
+ [Success/Failure] Test results
+ Add optional flags (--headless, --url, --retry)
+Phase 5: Execution Engine
+ Implement Playwright test runner integration
+ Write generated .spec.ts to temp directory
+ Execute tests with npx playwright test
+ Capture test output and display in terminal
+ Save screenshots on failure to ./auto-qa/evidence/
+Phase 6: Error Handling & Resilience
+ Implement retry logic for Gemini API failures
+ Handle network errors gracefully
+ Validate selector ambiguity and suggest alternatives
+ Add timeout handling for long-running tests
+Phase 7: Testing & Verification
+ Create sample test cases for common flows (login, checkout, navigation)
+ Test with ambiguous selectors scenario
+ Test iframe detection and handling
+ Verify screenshot capture on failures
+ Performance test: ensure <5s generation time
+Phase 8: Documentation & Distribution
+ Write README with installation and usage instructions
+ Create example commands and use cases
+ Document environment setup (.env configuration)
+ Prepare npm package for distribution
+ Add license and contribution guidelines
