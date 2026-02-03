@@ -70,6 +70,7 @@ The "quality filter."
 
 Uses Zod schemas to validate that the AI's response contains all necessary properties (testName, testCode, fullScript).
 Cleans AI output by stripping markdown blocks or irrelevant text.
+
 📁 4. Project File Structure
 text
 AutoQA/
@@ -85,6 +86,7 @@ AutoQA/
 ├── package.json            # Dependencies and scripts
 ├── tsconfig.json           # TS Compilation settings
 └── .env                    # API Keys and Model configuration
+
 🌟 Note on Recent Improvements
 We recently upgraded the Context Harvester to move beyond simple accessibility trees. It now performs a deep DOM scan, which makes it significantly more effective at detecting elements in modern web apps (like your Personal Finance App) where standard accessibility roles might be missing or generic.
 ## Installation
